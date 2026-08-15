@@ -1,0 +1,6 @@
+.DS_Store
+
+# identity and machine-specific overrides -- never commit these
+gitconfig.local
+*.local
+!*.local.example

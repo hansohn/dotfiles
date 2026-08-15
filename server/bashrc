@@ -1,0 +1,110 @@
+# shellcheck shell=bash
+# Minimal bashrc for servers.
+#
+# Most Linux boxes land you in bash, not zsh. No oh-my-zsh, no plugins, no
+# network calls, nothing to install. Sourced for interactive shells only.
+#
+# Append to the distro's ~/.bashrc rather than replacing it -- Debian/Ubuntu
+# ship useful defaults there.
+
+# interactive only
+case $- in
+  *i*) ;;
+    *) return ;;
+esac
+
+#------------------------------------------------------------------------------
+# HISTORY
+#------------------------------------------------------------------------------
+
+HISTCONTROL=ignoreboth        # no dupes, no leading-space commands
+HISTSIZE=10000
+HISTFILESIZE=20000
+HISTTIMEFORMAT='%F %T '       # timestamps -- matters when reconstructing an incident
+shopt -s histappend           # merge history across concurrent sessions
+shopt -s checkwinsize
+shopt -s cdspell 2>/dev/null
+
+#------------------------------------------------------------------------------
+# PROMPT
+#------------------------------------------------------------------------------
+# Always shows user@host -- the whole point on a box you ssh'd into. Turns red
+# for root. Git branch only if the helper is present; no subshell cost otherwise.
+
+if [ -f /usr/share/git/completion/git-prompt.sh ]; then
+  . /usr/share/git/completion/git-prompt.sh
+elif [ -f /usr/lib/git-core/git-sh-prompt ]; then
+  . /usr/lib/git-core/git-sh-prompt
+fi
+
+__prompt_branch() {
+  if declare -F __git_ps1 >/dev/null 2>&1; then
+    __git_ps1 ' (%s)'
+  fi
+}
+
+if [ "$(id -u)" -eq 0 ]; then
+  __user_color='\[\033[01;31m\]'   # red for root
+else
+  __user_color='\[\033[01;32m\]'
+fi
+
+PS1="${__user_color}\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$(__prompt_branch)\$ "
+
+#------------------------------------------------------------------------------
+# ALIASES
+#------------------------------------------------------------------------------
+
+alias ls='ls --color=auto'
+alias ll='ls -lh --color=auto'
+alias la='ls -lha --color=auto'
+alias grep='grep --color=auto'
+alias df='df -h'
+alias du='du -h'
+alias disk='du -hd 1'
+alias free='free -h'
+alias utc='date -u'
+alias ip='ip -br addr'
+
+# Interactive by default. Worth the extra keystroke on production.
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias rm='rm -i'
+alias mkdir='mkdir -pv'
+
+alias less='less -FSRX'
+
+# systemd
+if command -v systemctl &>/dev/null; then
+  alias sc='systemctl'
+  alias scu='systemctl --user'
+  alias jc='journalctl'
+  alias jcf='journalctl -f'
+  alias jce='journalctl -p err -b'
+fi
+
+command -v kubectl &>/dev/null && alias k='kubectl'
+
+#------------------------------------------------------------------------------
+# ENVIRONMENT
+#------------------------------------------------------------------------------
+
+export EDITOR=vim
+export VISUAL=vim
+export PAGER=less
+export LESS='-FSRX'
+
+[ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/bin" ]        && PATH="$HOME/bin:$PATH"
+export PATH
+
+# Only set a locale that exists here.
+if locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$'; then
+  export LANG=en_US.UTF-8
+fi
+
+#------------------------------------------------------------------------------
+# LOCAL OVERRIDES
+#------------------------------------------------------------------------------
+
+[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"

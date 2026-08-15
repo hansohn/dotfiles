@@ -1,0 +1,73 @@
+" Minimal vimrc for servers.
+"
+" No plugins, no colorscheme, no external dependencies. Safe to drop on any
+" box running vim 7.x or later without installing anything. The full config
+" lives in ../vim/vimrc and expects vim-plug plus a dozen plugins.
+
+set nocompatible
+
+" ----- UI -----
+set number
+set ruler
+set laststatus=2
+set statusline=%F[%L][%{&ff}][%p%%][%l,%v]
+set showcmd
+set showmode
+set showmatch
+set wildmenu
+set wildmode=list:longest,full
+
+" cursorline is noticeably slow over a laggy ssh link
+set nocursorline
+
+" ----- general -----
+set autoread
+set backspace=2
+set ttyfast
+let mapleader = ','
+
+" ----- search -----
+set incsearch
+set hlsearch
+set ignorecase
+set smartcase
+
+" ----- tabs -----
+set expandtab
+set smarttab
+set tabstop=2
+set softtabstop=2
+set shiftwidth=2
+set shiftround
+
+" Two-space tabs are wrong for these; match the ecosystem defaults.
+autocmd FileType python setlocal tabstop=4 softtabstop=4 shiftwidth=4
+autocmd FileType go     setlocal noexpandtab tabstop=4 shiftwidth=4
+autocmd FileType make   setlocal noexpandtab
+
+" ----- splits -----
+set splitbelow
+set splitright
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+" ----- syntax -----
+syntax on
+filetype plugin indent on
+set encoding=utf8
+
+" Only set a colorscheme that ships with vim itself.
+silent! colorscheme desert
+
+" ----- editing root-owned files -----
+" Writable backup/swap locations, since $HOME may not be writable under sudo.
+set backupdir=/tmp//,.
+set directory=/tmp//,.
+
+" Sudo-write the current file when you opened it without permission.
+cnoremap w!! w !sudo tee % >/dev/null
+
+" Spell-check commit messages
+autocmd FileType gitcommit setlocal spell

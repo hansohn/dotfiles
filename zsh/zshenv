@@ -1,0 +1,4 @@
+# Read by every zsh invocation, before every other startup file.
+# Keep this minimal and guarded -- it runs for non-interactive shells too.
+
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"

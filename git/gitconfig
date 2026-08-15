@@ -1,0 +1,20 @@
+[core]
+	editor = vim
+	excludesfile = ~/.config/git/ignore
+[credential]
+	helper = osxkeychain
+[init]
+	defaultBranch = main
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[pull]
+	rebase = false
+
+# Identity lives in an untracked file so this one can be public, and so a work
+# machine can carry a different name and address. See gitconfig.local.example.
+# Included last, so anything here can be overridden per-machine.
+[include]
+	path = ~/.gitconfig.local

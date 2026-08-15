@@ -1,0 +1,17 @@
+# Copy to ~/.gitconfig.local and fill in. Never committed.
+#
+#   cp git/gitconfig.local.example ~/.gitconfig.local
+#
+# Without this file git has no author identity and commits will fail with
+# "Please tell me who you are". Use a @users.noreply.github.com address on
+# machines where you would rather not publish a real one.
+
+[user]
+	name = Your Name
+	email = you@users.noreply.github.com
+
+# Work machines often need a different identity per directory tree. Prefer
+# this over editing the block above, so personal repos keep the default.
+#
+# [includeIf "gitdir:~/work/"]
+# 	path = ~/.gitconfig-work

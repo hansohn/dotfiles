@@ -1,0 +1,13 @@
+{
+  "includeCoAuthoredBy": false,
+  "model": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y @owloops/claude-powerline@latest --theme=tokyo-night --style=powerline"
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
+  },
+  "tui": "default"
+}

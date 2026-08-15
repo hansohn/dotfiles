@@ -1,0 +1,154 @@
+---
+name: validate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          # zsh files are not valid sh; they are syntax-checked by the zsh job
+          ignore_paths: >-
+            zsh
+            os
+          # bashrc has no shebang, so auto-discovery would skip it
+          additional_files: bashrc
+          severity: error
+
+  zsh-syntax:
+    name: zsh syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install zsh
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+      - name: Parse every zsh file
+        run: |
+          for f in zsh/zshenv zsh/zprofile zsh/zshrc os/darwin.zsh os/linux.zsh; do
+            echo "==> $f"
+            zsh -n "$f"
+          done
+
+  # The configs are meant to load cleanly on a box with nothing installed.
+  # This is the case that actually regressed before, so it is the case we test.
+  bare-linux:
+    name: bare linux (no deps)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install zsh only
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+      - name: Link configs without bootstrapping anything
+        run: |
+          ln -sf "$PWD/zsh/zshrc"    "$HOME/.zshrc"
+          ln -sf "$PWD/zsh/zshenv"   "$HOME/.zshenv"
+          ln -sf "$PWD/zsh/zprofile" "$HOME/.zprofile"
+      - name: Startup must be silent with no oh-my-zsh, brew, cargo or locale
+        env:
+          DOTFILES: ${{ github.workspace }}
+        run: |
+          err="$(zsh -lic 'true' 2>&1 >/dev/null)"
+          if [ -n "$err" ]; then
+            echo "::error::zsh startup wrote to stderr:"
+            printf '%s\n' "$err"
+            exit 1
+          fi
+          echo "clean startup"
+      - name: vim must not be shadowed by a missing nvim
+        env:
+          DOTFILES: ${{ github.workspace }}
+        run: |
+          sudo apt-get install -y -qq vim
+          resolved="$(zsh -lic 'command -v vim' 2>/dev/null)"
+          echo "vim -> ${resolved}"
+          case "$resolved" in
+            *nvim*) echo "::error::vim aliased to nvim which is not installed"; exit 1 ;;
+          esac
+
+  bootstrap:
+    name: bootstrap (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install zsh
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh vim
+      - name: Run installer with bootstrap
+        env:
+          DOTFILES: ${{ github.workspace }}
+        run: ./install.sh --bootstrap
+      - name: Startup must be silent
+        env:
+          DOTFILES: ${{ github.workspace }}
+        run: |
+          err="$(zsh -lic 'true' 2>&1 >/dev/null | grep -v 'can.t change option: zle' || true)"
+          if [ -n "$err" ]; then
+            echo "::error::zsh startup wrote to stderr:"
+            printf '%s\n' "$err"
+            exit 1
+          fi
+          echo "clean startup"
+      - name: Installer must be idempotent
+        env:
+          DOTFILES: ${{ github.workspace }}
+        run: |
+          ./install.sh --bootstrap > /tmp/second.txt 2>&1
+          cat /tmp/second.txt
+          if grep -qE '^(link|bak|inst) ' /tmp/second.txt; then
+            echo "::error::second run was not a no-op"
+            exit 1
+          fi
+          echo "idempotent"
+
+  minimal:
+    name: server profile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install vim
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq vim
+      - name: Install server profile
+        run: ./install.sh --minimal
+      - name: vim must start with no errors and no prompts
+        run: |
+          sudo apt-get install -y -qq util-linux
+          TERM=xterm-256color script -qec "vim -c 'qa!' /tmp/x.txt" /dev/null > /tmp/s.txt 2>&1 || true
+          if tr -d '\r' < /tmp/s.txt | grep -aqE 'E[0-9]+:'; then
+            echo "::error::vim reported errors on startup:"
+            tr -d '\r' < /tmp/s.txt | grep -aoE 'E[0-9]+:[^ ]*' | sort -u
+            exit 1
+          fi
+          echo "vim starts clean"
+      - name: bashrc must load
+        run: bash -lic 'type ll >/dev/null && echo "server bashrc loaded"'
+      - name: Must be idempotent
+        run: |
+          ./install.sh --minimal > /tmp/second.txt 2>&1
+          cat /tmp/second.txt
+          grep -qE '^(link|add) ' /tmp/second.txt && { echo "::error::not idempotent"; exit 1; }
+          echo "idempotent"

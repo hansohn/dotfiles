@@ -1,0 +1,207 @@
+#!/usr/bin/env zsh
+
+#------------------------------------------------------------------------------
+# LOCALE
+#------------------------------------------------------------------------------
+# MUST come before oh-my-zsh: the theme parses its powerline glyphs at source
+# time, and under a non-UTF-8 locale that throws "character not in range".
+#
+# Only set the locale if it exists on this machine. Exporting en_US.UTF-8 on a
+# box where it was never generated (common on minimal Ubuntu, and on Gentoo
+# before locale-gen) produces setlocale warnings on every command and breaks
+# the agnoster prompt's glyphs.
+
+if locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$'; then
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+elif locale -a 2>/dev/null | grep -qiE '^C\.utf-?8$'; then
+  # No en_US, but glibc ships C.UTF-8. Enough for the agnoster prompt's
+  # glyphs; without a UTF-8 locale it throws "character not in range".
+  export LANG=C.UTF-8
+fi
+
+#------------------------------------------------------------------------------
+# OH-MY-ZSH
+#------------------------------------------------------------------------------
+
+export ZSH="${HOME}/.oh-my-zsh"
+
+ZSH_THEME="agnoster"
+
+plugins=(
+  ansible
+  aws
+  docker
+  git
+  helm
+  kubectl
+  terraform
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+)
+
+# Add Homebrew completions path if Homebrew is installed
+if command -v brew &>/dev/null; then
+  fpath=("$(brew --prefix)/share/zsh-completions" $fpath)
+fi
+
+# Only source oh-my-zsh if it is actually installed. On a Linux box without it
+# the rest of this file still needs to load.
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
+
+# Initialize completion system (only once)
+autoload -Uz +X compinit bashcompinit
+compinit
+bashcompinit
+
+export PATH="/usr/local/bin:/usr/local/sbin:${PATH}"
+
+#------------------------------------------------------------------------------
+# PATH HELPER
+#------------------------------------------------------------------------------
+
+path_add() {
+  [ -d "$1" ] && PATH="$1:$PATH"
+}
+
+# Determined here rather than in os/darwin.zsh because the cross-platform
+# blocks below need it, and the os/ files are sourced last.
+if command -v brew &>/dev/null; then
+  BREW_PREFIX="$(brew --prefix)"
+else
+  BREW_PREFIX="/usr/local"
+fi
+
+#------------------------------------------------------------------------------
+# APPLICATIONS (cross-platform)
+#------------------------------------------------------------------------------
+
+# aws-vault: cache MFA session token for 12h (reduces MFA prompts)
+export AWS_SESSION_TOKEN_TTL=12h
+
+# curl
+path_add "${BREW_PREFIX}/opt/curl/bin"
+
+# fzf
+if command -v fzf &>/dev/null; then
+  source <(fzf --zsh)
+  export FZF_DEFAULT_COMMAND="rg --files --hidden --glob '!.git/' --sort=path"
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+
+  _fzf_compgen_path() {
+    fd --hidden --follow --exclude ".git" . "$1"
+  }
+  _fzf_compgen_dir() {
+    fd --type d --hidden --follow --exclude ".git" . "$1"
+  }
+fi
+
+# gnu
+path_add "${BREW_PREFIX}/opt/gnu-getopt/bin"
+
+# hashicorp
+# export PACKER_LOG="DEBUG"
+export VAGRANT_DEFAULT_PROVIDER="virtualbox"
+
+# node / nvm
+NVM_SHELL=true
+if [ "$NVM_SHELL" = true ]; then
+  if [ -d "${BREW_PREFIX}/opt/n" ]; then
+    export N_PREFIX="${HOME}/.n"
+    path_add "${N_PREFIX}/bin"
+  fi
+  if [ -f "${BREW_PREFIX}/opt/nvm/nvm.sh" ]; then
+    export NVM_DIR="${HOME}/.nvm"
+    source "${BREW_PREFIX}/opt/nvm/nvm.sh"
+  elif [ -f "${HOME}/.nvm/nvm.sh" ]; then
+    export NVM_DIR="${HOME}/.nvm"
+    source "${HOME}/.nvm/nvm.sh"
+  fi
+fi
+
+# pyenv
+if command -v pyenv &>/dev/null; then
+  export PYENV_ROOT="$HOME/.pyenv"
+  path_add "$PYENV_ROOT/bin"
+  eval "$(pyenv init --path)"
+  eval "$(pyenv init -)"
+  eval "$(pyenv virtualenv-init -)"
+fi
+
+# xdg
+export XDG_CONFIG_HOME="${HOME}/.config"
+
+#------------------------------------------------------------------------------
+# SHELL MODS
+#------------------------------------------------------------------------------
+
+# aws
+SHOW_AWS_PROMPT=true
+RPROMPT="${RPROMPT//\$\(aws_prompt_info\)}"
+
+# zsh
+prompt_context () {
+  if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
+    prompt_segment "$AGNOSTER_CONTEXT_BG" "$AGNOSTER_CONTEXT_FG" "%(!.%{%F{$AGNOSTER_STATUS_ROOT_FG}%}.)"
+  fi
+}
+
+#------------------------------------------------------------------------------
+# ALIASES (portable)
+#------------------------------------------------------------------------------
+# Anything whose flags or backing command differ between BSD and GNU userland
+# lives in os/darwin.zsh or os/linux.zsh instead.
+
+# utilities / system
+alias hostfile='sudo vim /etc/hosts'
+alias utc='date -u'
+
+# disk / filesystem
+alias disk='du -hd 1'
+alias df='df -h'
+
+# networking
+alias wmip='curl ipinfo.io'
+alias ip="ifconfig | awk '/inet / { print \$2 }'"
+alias netCons='lsof -i'
+alias lsock='sudo lsof -i -P'
+alias lsockU='sudo lsof -nP | grep UDP'
+alias lsockT='sudo lsof -nP | grep TCP'
+alias openPorts='sudo lsof -i | grep LISTEN'
+
+# preferred overrides
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias mkdir='mkdir -pv'
+alias grep='grep --color=auto --exclude-dir=.git'
+alias less='less -FSRXc'
+
+# shortcuts / quick commands
+alias k=kubectl
+alias m='source ~/Code/python/ansible/venv/bin/activate'
+
+#------------------------------------------------------------------------------
+# OS-SPECIFIC
+#------------------------------------------------------------------------------
+# Loaded last so platform aliases win over the portable defaults above.
+
+DOTFILES="${DOTFILES:-${HOME}/Code/dotfiles}"
+
+case "$OSTYPE" in
+  darwin*) [ -f "${DOTFILES}/os/darwin.zsh" ] && source "${DOTFILES}/os/darwin.zsh" ;;
+  linux*)  [ -f "${DOTFILES}/os/linux.zsh" ]  && source "${DOTFILES}/os/linux.zsh"  ;;
+esac
+
+# Added last so it takes precedence over everything above, including the
+# language-manager shims. Local tools are meant to win.
+path_add "${HOME}/.local/bin"
+
+#------------------------------------------------------------------------------
+# LOCAL OVERRIDES
+#------------------------------------------------------------------------------
+# Machine-specific settings that should never be committed (work hostnames,
+# client paths, one-off exports). Not tracked by this repo.
+
+[ -f "${HOME}/.zshrc.local" ] && source "${HOME}/.zshrc.local"
