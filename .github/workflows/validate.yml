@@ -26,10 +26,18 @@ jobs:
         with:
           # full history -- a secret removed in a later commit is still exposed
           fetch-depth: 0
+      # The binary is run directly rather than via gitleaks-action, which scans
+      # the range <first-pushed>^..<last>. That is unresolvable when the push
+      # contains the root commit -- it has no parent -- so the action aborts
+      # having scanned 0 bytes and still reports success. `detect` scans the
+      # whole history unconditionally and has no range to get wrong.
       - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --verbose --no-banner
 
   shellcheck:
     name: shellcheck
