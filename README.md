@@ -1,4 +1,17 @@
-# dotfiles
+<div align="center">
+  <h1>dotfiles</h1>
+  <p>Shell, editor and terminal configuration for infrastructure and platform engineering</p>
+  <p>
+    <!-- Build Status -->
+    <a href="https://github.com/hansohn/dotfiles/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/hansohn/dotfiles/validate.yml?style=for-the-badge"></a>
+    <!-- Github Tag -->
+    <a href="https://github.com/hansohn/dotfiles/tags/"><img src="https://img.shields.io/github/v/tag/hansohn/dotfiles?style=for-the-badge&sort=semver"></a>
+    <!-- License -->
+    <a href="https://github.com/hansohn/dotfiles/blob/main/LICENSE.md"><img src="https://img.shields.io/github/license/hansohn/dotfiles.svg?style=for-the-badge"></a>
+  </p>
+</div>
+
+## Description
 
 Personal shell, vim, and tmux configuration. Primary target is macOS; the zsh
 config is OS-guarded and also works on Linux. A separate dependency-free
