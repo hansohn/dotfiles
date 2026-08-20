@@ -136,6 +136,25 @@ bootstrap matrix on ubuntu and macos runners, an idempotency check, and a
 server-profile job asserting vim starts with no errors and no Press-ENTER
 prompt.
 
+### Naming conventions
+
+Shared with [`hansohn/mac-setup`](https://github.com/hansohn/mac-setup), so a
+setting reads the same in either repo:
+
+- `UPPER_SNAKE` for config and constants, `lower_snake` for a script's internal
+  working variables.
+- Domain first — `<DOMAIN>_<ATTRIBUTE>` — so everything about one tool sorts
+  together.
+- Feature toggles end in `_ENABLED`: `NVM_ENABLED`, `ANACONDA_ENABLED`,
+  `CHEF_ENABLED`, `MINICONDA_ENABLED`, `RUBY_BREW_ENABLED`.
+- Paths carry a type suffix: `_DIR`, `_FILE`, `_PATH`. No abbreviations.
+
+One exception, and it matters: a variable another tool defines keeps that
+tool's name. `SHOW_AWS_PROMPT` (`zsh/zshrc`) and `DEFAULT_USER` (referenced by
+`prompt_context`) are both read by oh-my-zsh — `agnoster.zsh-theme` and
+`plugins/aws` — so renaming them to fit the list above would quietly turn off
+what they control rather than failing loudly.
+
 ## Linux notes
 
 Verified on Ubuntu 24.04 with zsh 5.9. Gentoo is best-effort — the same guards
@@ -160,8 +179,10 @@ production host costs startup time and buys little.
 
 ## Deliberately excluded
 
-This repo is **private**, but nothing containing live credentials belongs in it
-regardless. Kept out on purpose:
+This repo is **public**, so nothing containing live credentials belongs in it.
+That was the rule before it was published and it is enforced by CI now — see
+the `gitleaks` job in [`validate.yml`](.github/workflows/validate.yml). Kept out
+on purpose:
 
 - **Anything holding credentials** — package-manager tokens, cluster and cloud
   auth material, app access tokens, keyrings, and private keys. Every candidate
@@ -208,7 +229,7 @@ already unreachable:
 - `alias wmip="curl -w '\n' https://ipinfo.io/what-is-my-ip"` — the first of
   two `wmip` definitions. The second, `curl ipinfo.io`, always won.
 - `export EDITOR="VIM"` — inside the `chef` block, which is gated on
-  `CHEF_SHELL=false` and never ran. `"VIM"` uppercase is not a valid editor
+  `CHEF_ENABLED=false` and never ran. `"VIM"` uppercase is not a valid editor
   command regardless. Nothing currently sets `EDITOR` on the workstation side;
   `server/bashrc` sets it to `vim`.
 

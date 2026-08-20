@@ -13,6 +13,24 @@ on:
       - synchronize
 
 jobs:
+  # This repo is public and several tracked files are rewritten by the tools
+  # that own them -- ~/.gitconfig by `git config --global`, k9s/config.yaml by
+  # k9s on exit, gh/config.yml by `gh alias set`. A credential can land here
+  # without anyone deciding to put it here, so scan rather than rely on review.
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # full history -- a secret removed in a later commit is still exposed
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   shellcheck:
     name: shellcheck
     runs-on: ubuntu-latest
