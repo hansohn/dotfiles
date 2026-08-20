@@ -185,7 +185,7 @@ newest_backup() {
 }
 
 uninstall_all() {
-  local restore_from removed=0 restored=0 pair rel src dst seen=" "
+  local restore_from removed=0 restored=0 pair rel src dst seen=" " rc tmp
   restore_from="$(newest_backup || true)"
 
   for pair in "${full_links[@]}" "${minimal_links[@]}"; do
@@ -223,17 +223,20 @@ uninstall_all() {
     fi
   done
 
-  # remove the server-profile block from ~/.bashrc
-  if [ -f "${HOME}/.bashrc" ] && grep -qF "${BASHRC_MARKER}" "${HOME}/.bashrc"; then
-    local tmp
-    tmp="$(mktemp)"
-    sed '/^# >>> dotfiles server profile >>>$/,/^# <<< dotfiles server profile <<<$/d' \
-      "${HOME}/.bashrc" > "${tmp}"
-    # drop the blank line the installer added ahead of the block
-    printf '%s\n' "$(cat "${tmp}")" > "${HOME}/.bashrc"
-    rm -f "${tmp}"
-    echo "rm   ~/.bashrc server profile block"
-  fi
+  # remove the server-profile block from ~/.bashrc and from whichever login
+  # file was chained to it -- install writes to both, so uninstall must too
+  for rc in "${HOME}/.bashrc" "${HOME}/.bash_profile" "${HOME}/.bash_login" \
+            "${HOME}/.profile"; do
+    if [ -f "${rc}" ] && grep -qF "${BASHRC_MARKER}" "${rc}"; then
+      tmp="$(mktemp)"
+      sed '/^# >>> dotfiles server profile >>>$/,/^# <<< dotfiles server profile <<<$/d' \
+        "${rc}" > "${tmp}"
+      # drop the blank line the installer added ahead of the block
+      printf '%s\n' "$(cat "${tmp}")" > "${rc}"
+      rm -f "${tmp}"
+      echo "rm   ${rc} server profile block"
+    fi
+  done
 
   echo
   echo "Removed ${removed} symlink(s); restored ${restored} file(s)."
@@ -274,6 +277,36 @@ case "${MODE}" in
         echo "# <<< dotfiles server profile <<<"
       } >> "${HOME}/.bashrc"
       echo "add  ~/.bashrc -> sources ${REPO}/server/bashrc"
+    fi
+
+    # A login shell reads the first of ~/.bash_profile, ~/.bash_login and
+    # ~/.profile, then stops. Debian's ~/.profile chains to ~/.bashrc, so the
+    # block above loads. On a host that ships a ~/.bash_profile instead --
+    # RHEL-family, and GitHub runners -- ~/.profile is never read and the
+    # server profile silently does not load on SSH login.
+    login_rc=""
+    for candidate in "${HOME}/.bash_profile" "${HOME}/.bash_login" "${HOME}/.profile"; do
+      if [ -f "${candidate}" ]; then
+        login_rc="${candidate}"
+        break
+      fi
+    done
+    # none of them exist, so a login shell reads nothing; create the one
+    # Debian would have shipped
+    [ -z "${login_rc}" ] && login_rc="${HOME}/.profile"
+
+    if grep -qF "${BASHRC_MARKER}" "${login_rc}" 2>/dev/null; then
+      echo "ok   ${login_rc} (already chained)"
+    elif grep -qE '^[^#]*(\.|source)[[:space:]]+.*\.bashrc' "${login_rc}" 2>/dev/null; then
+      echo "ok   ${login_rc} (already sources ~/.bashrc)"
+    else
+      {
+        echo ""
+        echo "${BASHRC_MARKER}"
+        echo "[ -f \"\${HOME}/.bashrc\" ] && . \"\${HOME}/.bashrc\""
+        echo "# <<< dotfiles server profile <<<"
+      } >> "${login_rc}"
+      echo "add  ${login_rc} -> sources ~/.bashrc"
     fi
 
     echo
