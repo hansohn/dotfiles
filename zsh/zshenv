@@ -1,4 +1,18 @@
 # Read by every zsh invocation, before every other startup file.
 # Keep this minimal and guarded -- it runs for non-interactive shells too.
 
+# Debian and Ubuntu run a bare `compinit` from /etc/zsh/zshrc, before ~/.zshrc
+# is read. Bare means no -i, so if any directory in $fpath is insecure -- and
+# /usr/share/zsh is on stock Ubuntu images -- it tries to prompt. A shell with
+# no controlling terminal cannot answer, so it aborts and completion is dead
+# before our own setup gets a turn:
+#
+#   not interactive and can't open terminal
+#   compinit: initialization aborted
+#
+# This variable is the opt-out /etc/zsh/zshrc documents for exactly this. It
+# must be set here rather than in zshrc: ~/.zshenv is read before
+# /etc/zsh/zshrc, and ~/.zshrc is read after it. zsh/zshrc owns compinit.
+skip_global_compinit=1
+
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"

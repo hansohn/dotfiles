@@ -51,9 +51,15 @@ if [ -f "$ZSH/oh-my-zsh.sh" ]; then
   source "$ZSH/oh-my-zsh.sh"
 fi
 
-# Initialize completion system (only once)
+# Initialize completion system (only once -- see skip_global_compinit in
+# zsh/zshenv, which stops Debian's /etc/zsh/zshrc running its own first).
+#
+# -i skips insecure (group- or world-writable) fpath entries instead of asking
+# about them. Stock Ubuntu ships /usr/share/zsh group-writable, and without -i
+# a shell that has no controlling terminal cannot answer the prompt, so
+# completion aborts entirely.
 autoload -Uz +X compinit bashcompinit
-compinit
+compinit -i
 bashcompinit
 
 export PATH="/usr/local/bin:/usr/local/sbin:${PATH}"
