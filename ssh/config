@@ -1,3 +1,12 @@
+# Machine-specific hosts -- work bastions, internal hostnames, per-host keys --
+# belong in ~/.ssh/config.local, which is not tracked and so cannot be published
+# by accident. A missing file here is not an error, so this line is safe on a
+# machine that has no local config.
+#
+# It must come first. ssh uses the first value it obtains for each keyword, so
+# an Include placed below the Host blocks could never override them.
+Include ~/.ssh/config.local
+
 Host github.com
     HostName github.com
     User git

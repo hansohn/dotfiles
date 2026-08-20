@@ -193,6 +193,30 @@ on purpose:
   checkpoints, `.wget-hsts`, `.lesshst`, and `~/.config/helm/repositories.yaml`
   (regenerable via `helm repo add`).
 
+### Local overrides
+
+Because the tracked files are symlinked into `$HOME`, anything written to them
+is written into this repo's working tree. Where a tool supports it, the fix is
+an untracked local file rather than editing the tracked one:
+
+| Tracked | Override in | Loaded |
+|---|---|---|
+| `git/gitconfig` | `~/.gitconfig.local` | `[include]`, last so it wins |
+| `zsh/zshrc` | `~/.zshrc.local` | sourced last |
+| `server/bashrc` | `~/.bashrc.local` | sourced last |
+| `ssh/config` | `~/.ssh/config.local` | `Include`, **first** so it wins |
+
+`ssh` is the odd one: it takes the *first* value it obtains for each keyword,
+not the last, so its `Include` sits at the top of the file rather than the
+bottom. A missing local file is not an error in any of the four.
+
+### Tracked files their own tool rewrites
+
+`k9s/config.yaml` and `gh/config.yml` are rewritten by k9s and `gh`, so changes
+can appear here without anyone editing them. Both are safe to track as of k9s
+0.51, which keeps per-cluster state in `~/.local/state/k9s/` rather than in
+`config.yaml` — but the diffs are worth reading rather than staging blind.
+
 ## Not managed here
 
 - **Neovim** — lives in its own repo, [`hansohn/nvim`](https://github.com/hansohn/nvim),
