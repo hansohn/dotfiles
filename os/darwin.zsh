@@ -15,19 +15,19 @@ command -v brew &>/dev/null && export HOMEBREW_CASK_OPTS="--appdir=/Applications
 #------------------------------------------------------------------------------
 
 # feature toggles
-ANACONDA_SHELL=false
-CHEF_SHELL=false
-MINICONDA_SHELL=false
-RUBY_USE_BREW=false
+ANACONDA_ENABLED=false
+CHEF_ENABLED=false
+MINICONDA_ENABLED=false
+RUBY_BREW_ENABLED=false
 
 # anaconda
-if [ "$ANACONDA_SHELL" = true ] && [ -d "/usr/local/anaconda3" ]; then
+if [ "$ANACONDA_ENABLED" = true ] && [ -d "/usr/local/anaconda3" ]; then
   path_add "/usr/local/anaconda3/bin"
   eval "$(register-python-argcomplete conda)"
 fi
 
 # miniconda
-if [ "$MINICONDA_SHELL" = true ] && [ -d "${BREW_PREFIX}/Caskroom/miniconda" ]; then
+if [ "$MINICONDA_ENABLED" = true ] && [ -d "${BREW_PREFIX}/Caskroom/miniconda" ]; then
   eval "$(register-python-argcomplete conda)"
   if [ -x "${BREW_PREFIX}/Caskroom/miniconda/base/bin/conda" ]; then
     __conda_setup="$("${BREW_PREFIX}/Caskroom/miniconda/base/bin/conda" shell.zsh hook 2>/dev/null)"
@@ -40,7 +40,7 @@ fi
 path_add "/opt/dsc-cassandra/current/bin"
 
 # chef
-if [ "$CHEF_SHELL" = true ] && brew list | grep -q '^chefdk$'; then
+if [ "$CHEF_ENABLED" = true ] && brew list | grep -q '^chefdk$'; then
   eval "$(chef shell-init bash)"
 fi
 
@@ -70,7 +70,7 @@ fi
 [ -d "/usr/local/opt/openssl" ] && export OPENSSL_ROOT_DIR="/usr/local/opt/openssl"
 
 # ruby
-[ "${RUBY_USE_BREW}" = true ] && path_add "/usr/local/opt/ruby/bin"
+[ "${RUBY_BREW_ENABLED}" = true ] && path_add "/usr/local/opt/ruby/bin"
 
 # google cloud sdk
 if [ -f "${BREW_PREFIX}/share/google-cloud-sdk/path.zsh.inc" ]; then

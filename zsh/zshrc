@@ -106,8 +106,8 @@ path_add "${BREW_PREFIX}/opt/gnu-getopt/bin"
 export VAGRANT_DEFAULT_PROVIDER="virtualbox"
 
 # node / nvm
-NVM_SHELL=true
-if [ "$NVM_SHELL" = true ]; then
+NVM_ENABLED=true
+if [ "$NVM_ENABLED" = true ]; then
   if [ -d "${BREW_PREFIX}/opt/n" ]; then
     export N_PREFIX="${HOME}/.n"
     path_add "${N_PREFIX}/bin"
