@@ -169,7 +169,7 @@ alias disk='du -hd 1'
 alias df='df -h'
 
 # networking
-alias wmip='curl ipinfo.io'
+alias wmip='curl -s ipinfo.io | jq'
 alias ip="ifconfig | awk '/inet / { print \$2 }'"
 alias netCons='lsof -i'
 alias lsock='sudo lsof -i -P'

@@ -264,7 +264,8 @@ Two lines from the original `.zshrc` were dropped in the OS split. Both were
 already unreachable:
 
 - `alias wmip="curl -w '\n' https://ipinfo.io/what-is-my-ip"` — the first of
-  two `wmip` definitions. The second, `curl ipinfo.io`, always won.
+  two `wmip` definitions. The second, `curl ipinfo.io`, always won; it has
+  since been changed to pipe through `jq`.
 - `export EDITOR="VIM"` — inside the `chef` block, which is gated on
   `CHEF_ENABLED=false` and never ran. `"VIM"` uppercase is not a valid editor
   command regardless. Nothing currently sets `EDITOR` on the workstation side;
