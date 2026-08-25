@@ -117,20 +117,22 @@ bootstrap_deps() {
 
 # Run after linking, so plugins.vim is in place.
 bootstrap_vim_plugins() {
-  local plugged="${HOME}/.vim/plugged"
-
   if [ ! -f "${HOME}/.vim/autoload/plug.vim" ] || ! command -v vim >/dev/null 2>&1; then
     return
   fi
 
-  # Already populated -- stay a no-op so re-running changes nothing.
-  if [ -d "${plugged}" ] && [ -n "$(ls -A "${plugged}" 2>/dev/null)" ]; then
-    echo "ok   vim plugins"
-    return
-  fi
-
-  echo "inst vim plugins (PlugInstall)"
-  vim -es -u "${HOME}/.vimrc" -i NONE -c "PlugInstall! --sync" -c qa >/dev/null 2>&1 || true
+  # No guard on ~/.vim/plugged being populated. That only says *something* is
+  # installed, not that everything vim/plugins.vim declares is -- so a plugin
+  # added later was never fetched, and the fix was to know to run :PlugInstall
+  # by hand. vim-plug already installs only what is missing, so let it decide.
+  # The cost is one vim startup per run when there is nothing to do.
+  #
+  # No bang: with it, s:install() passes force=1 and every plugin's post-install
+  # 'do' hook re-runs even when nothing changed -- which for plugins.vim means
+  # fzf#install() on every bootstrap. Without it, hooks run only for plugins
+  # actually installed or updated.
+  echo "sync vim plugins (PlugInstall)"
+  vim -es -u "${HOME}/.vimrc" -i NONE -c "PlugInstall --sync" -c qa >/dev/null 2>&1 || true
 }
 
 #------------------------------------------------------------------------------
