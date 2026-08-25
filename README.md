@@ -76,9 +76,15 @@ machine-specific settings, and `~/.bashrc.local` for the server profile.
 `server/bashrc` is appended rather than symlinked — Debian/Ubuntu ship useful
 defaults in `~/.bashrc` and replacing it wholesale loses them.
 
-`vim/vimrc` is sourced only by plain `/usr/bin/vim` — on macOS `zshrc` sets
-`alias vim='nvim'`. Note `git/gitconfig` sets `editor = vim`; git does not expand
-shell aliases, so git genuinely opens real vim.
+`vim/vimrc` is sourced only by plain `vim` — on macOS `zshrc` sets
+`alias vim='nvim'`, and git does not expand shell aliases, so anything invoking
+`vim` by name gets the real binary rather than Neovim.
+
+`git/gitconfig` therefore sets `editor = nvim` explicitly. It used to say `vim`,
+which meant every `git commit` opened real vim and loaded its full vim-plug
+stack — LSP, completion, a file tree and a fuzzy finder — to write a commit
+message. Neovim's `lang.git` extra covers that far better. Real vim is still
+installed and still the fallback; git just no longer reaches for it.
 
 ## Install
 
