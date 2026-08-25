@@ -130,8 +130,11 @@ and `git status` reflects it. Re-running `install.sh` is safe — it only
 re-links what has drifted, and archives anything real it would replace to
 `~/.dotfiles-backup/<timestamp>/`.
 
-If you clone somewhere other than `~/Code/dotfiles`, export `DOTFILES` to that
-path so `zshrc` can find the `os/` files.
+The clone can live anywhere. `zshrc` works out the repo root from its own
+location rather than a hardcoded path, so the `os/` files are found whether this
+is at `~/Code/dotfiles`, at `~/.dotfiles` where
+[hansohn/mac-setup](https://github.com/hansohn/mac-setup) puts it, or somewhere
+else entirely. Exporting `DOTFILES` still overrides it if you need that.
 
 ## Development
 

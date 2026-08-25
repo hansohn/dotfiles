@@ -193,7 +193,13 @@ alias m='source ~/Code/python/ansible/venv/bin/activate'
 #------------------------------------------------------------------------------
 # Loaded last so platform aliases win over the portable defaults above.
 
-DOTFILES="${DOTFILES:-${HOME}/Code/dotfiles}"
+# Where this repo is checked out. Derived from this file rather than hardcoded:
+# %x is the file being sourced, :A resolves it through the ~/.zshrc symlink to
+# the real path, and :h:h walks up from zsh/zshrc to the repo root. That means
+# the clone can live anywhere -- ~/.dotfiles, ~/Code/dotfiles, elsewhere --
+# without this file or whatever installed it having to agree on a path.
+# An explicit DOTFILES still wins.
+DOTFILES="${DOTFILES:-${${(%):-%x}:A:h:h}}"
 
 case "$OSTYPE" in
   darwin*) [ -f "${DOTFILES}/os/darwin.zsh" ] && source "${DOTFILES}/os/darwin.zsh" ;;
